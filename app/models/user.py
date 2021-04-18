@@ -9,7 +9,7 @@ import numpy as np
 
 class User(BaseModel):
 
-    async def get_all_users(self, course_id, semester, acedamic_year, **kwargs):
+    async def get_all_users(self, course_id, semester, academic_year, **kwargs):
         try:
             cursor = self.app.mysql_conn.cursor(buffered=True)
             stmt = 'SELECT c.course_title AS course_name,\
@@ -18,8 +18,8 @@ class User(BaseModel):
                 FROM student s \
                 LEFT JOIN studentincourse st ON s.student_id = st.student_id\
                 LEFT JOIN course c ON st.course_id = c.course_id\
-                WHERE c.course_id = %s AND st.semester = %s AND st.acedamic_year = %s'
-            value = (course_id,semester,acedamic_year)
+                WHERE c.course_id = %s AND st.semester = %s AND st.academic_year = %s'
+            value = (course_id,semester,academic_year)
             cursor.execute(stmt,value)
             students = cursor.fetchall()
             if len(students) > 0:
@@ -66,13 +66,13 @@ class User(BaseModel):
                 pass
             return {'status': 'err'}
 
-    async def get_all_courses(self, semester, acedamic_year, **kwargs):
+    async def get_all_courses(self, semester, academic_year, **kwargs):
         try:
             cursor = self.app.mysql_conn.cursor(buffered=True)
             stmt = 'SELECT DISTINCT c.course_id, c.course_title FROM course c \
                 LEFT JOIN studentincourse st ON c.course_id = st.course_id\
-                WHERE st.semester = %s AND st.acedamic_year = %s'
-            value = (semester, acedamic_year)
+                WHERE st.semester = %s AND st.academic_year = %s'
+            value = (semester, academic_year)
             cursor.execute(stmt,value)
             courses = [
                 {
@@ -90,16 +90,16 @@ class User(BaseModel):
                 pass
             return {'status': 'err'}
     
-    async def add_student_in_course(self, course_id, student_id, semester, acedamic_year, **kwargs):
+    async def add_student_in_course(self, course_id, student_id, semester, academic_year, time_start, time_end, **kwargs):
         try:
             cursor = self.app.mysql_conn.cursor(buffered=True)
             stmt = 'SELECT count(*) FROM studentincourse WHERE course_id = %s AND student_id = %s\
-                 AND semester = %s AND acedamic_year = %s'
-            value = (course_id, student_id, semester, acedamic_year)
+                 AND semester = %s AND academic_year = %s'
+            value = (course_id, student_id, semester, academic_year)
             cursor.execute(stmt, value)
             if cursor.fetchone()[0]:
                 cursor.close()
-                reason = 'student id: '+str(student_id)+' is in course: '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year) +' already'
+                reason = 'student id: '+str(student_id)+' is in course: '+str(course_id)+' semester: '+str(semester)+' academic year: '+str(academic_year) +' already'
                 return {'status': 'err',
                         'reason': reason }
             else:
@@ -111,13 +111,13 @@ class User(BaseModel):
                     value = (student_id,)
                     cursor.execute(stmt, value)
                     if cursor.fetchone()[0]:
-                        stmt = 'INSERT INTO studentincourse (course_id, student_id, semester, acedamic_year)\
-                            VALUES (%s,%s,%s,%s)'
-                        value = (course_id, student_id, semester, acedamic_year)
+                        stmt = 'INSERT INTO studentincourse (course_id, student_id, semester, academic_year, start_time, end_time)\
+                            VALUES (%s,%s,%s,%s,%s,%s)'
+                        value = (course_id, student_id, semester, academic_year, time_start, time_end)
                         cursor.execute(stmt, value)
                         self.app.mysql_conn.commit()
                         cursor.close()
-                        reason = 'add student id: '+str(student_id)+' in course '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year)
+                        reason = 'add student id: '+str(student_id)+' in course '+str(course_id)+' semester: '+str(semester)+' academic year: '+str(academic_year)
                         return {'status': 'success.',
                                 'reason': reason }
                     else:
@@ -136,54 +136,63 @@ class User(BaseModel):
                 pass
             return {'status': 'err'}
 
-    async def add_student_attendants(self, course_id, student_id, semester, acedamic_year, date, **kwargs):
+    async def add_student_attendants(self, course_id, student_id, semester, academic_year, today, current_time, is_re_check, **kwargs):
         try:
             cursor = self.app.mysql_conn.cursor(buffered=True)
-            stmt = 'SELECT count(*) FROM studentincourse WHERE course_id = %s AND student_id = %s\
-                 AND semester = %s AND acedamic_year = %s'
-            value = (course_id, student_id, semester, acedamic_year)
+            stmt = 'SELECT count(*) FROM course WHERE course_id = %s'
+            value = (course_id,)
             cursor.execute(stmt, value)
             if cursor.fetchone()[0]:
-                stmt = 'SELECT count(*) FROM course WHERE course_id = %s'
-                value = (course_id,)
+                stmt = 'SELECT count(*) FROM student WHERE student_id = %s'
+                value = (student_id,)
                 cursor.execute(stmt, value)
                 if cursor.fetchone()[0]:
-                    stmt = 'SELECT count(*) FROM student WHERE student_id = %s'
-                    value = (student_id,)
+                    stmt = 'SELECT * FROM studentincourse WHERE course_id = %s AND student_id = %s\
+                        AND semester = %s AND academic_year = %s'
+                    value = (course_id, student_id, semester, academic_year)
                     cursor.execute(stmt, value)
-                    if cursor.fetchone()[0]:
-                        stmt = 'SELECT count(*) FROM attendants WHERE course_id = %s AND student_id = %s AND semester = %s AND acedamic_year = %s AND date = %s'
-                        value = (course_id, student_id, semester, acedamic_year, date)
-                        cursor.execute(stmt, value)
-                        if cursor.fetchone()[0]:
-                            stmt = 'INSERT INTO attendants (course_id, student_id, semester, acedamic_year, date)\
-                                VALUES (%s,%s,%s,%s,%s)'
-                            value = (course_id, student_id, semester, acedamic_year, date)
+                    course = cursor.fetchall() 
+                    if len(course)>0:
+                        if  is_re_check:
+                            stmt = 'SELECT count(*) FROM attendants WHERE course_id = %s AND student_id = %s AND semester = %s AND academic_year = %s AND date = %s'
+                            value = (course_id, student_id, semester, academic_year, today)
                             cursor.execute(stmt, value)
-                            self.app.mysql_conn.commit()
-                            cursor.close()
-                            reason = 'check student id: '+str(student_id)+' in course '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year)+' day: '+str(date)
-                            return {'status': 'success.',
-                                    'reason': reason }
-                        else:
-                            cursor.close()
-                            reason = 'student id: ' + str(student_id) + ' is check in already '
-                            return {'status': 'err',
+                            if cursor.fetchone()[0]:
+                                cursor.close()
+                                reason = 'student id: ' + str(student_id) + ' is check in already '
+                                return {'status': 'err4',
+                                        'reason': reason }
+                            else:
+                                if is_re_check:
+                                    current_time = course[0][5]
+                                stmt = 'INSERT INTO attendants (course_id, student_id, semester, academic_year, date, time)\
+                                    VALUES (%s,%s,%s,%s,%s,%s)'
+                                value = (course_id, student_id, semester, academic_year, today, current_time)
+                                cursor.execute(stmt, value)
+                                self.app.mysql_conn.commit()
+                                cursor.close()
+                                reason = 'check in success'
+                                return {'status': 'success.',
+                                        'reason': reason }
+                        else: 
+                            reason = 'time out'
+                            return {'status': 'err5',
                                     'reason': reason }
                     else:
                         cursor.close()
-                        reason = 'can not found student id: ' + str(student_id)
-                        return {'status': 'err',
+                        reason = 'student id: '+str(student_id)+' is not in course: '+str(course_id)+' semester: '+str(semester)+' academic year: '+str(academic_year)
+                        return {'status': 'err3',
                                 'reason': reason }
                 else:
                     cursor.close()
-                    return {'status': 'err',
-                            'reason': 'can not found course id' }
+                    reason = 'can not found student id: ' + str(student_id)
+                    return {'status': 'err2',
+                            'reason': reason }
             else:
                 cursor.close()
-                reason = 'student id: '+str(student_id)+' is not in course: '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year)
-                return {'status': 'err',
-                        'reason': reason }
+                return {'status': 'err1',
+                        'reason': 'can not found course id' }
+            
         except:
             try:
                 cursor.close()
@@ -191,13 +200,13 @@ class User(BaseModel):
                 pass
             return {'status': 'err'}
 
-    async def get_attendants(self, course_id, semester, acedamic_year, date,**kwargs):
+    async def get_attendants(self, course_id, semester, academic_year, date,**kwargs):
         try:
             cursor = self.app.mysql_conn.cursor(buffered=True)
             stmt = 'SELECT DISTINCT * FROM student s \
                 LEFT JOIN attendants at ON at.student_id = s.student_id\
-                WHERE at.course_id = %s AND at.semester = %s AND at.acedamic_year = %s AND at.date = %s'
-            value = (course_id, semester, acedamic_year, date)
+                WHERE at.course_id = %s AND at.semester = %s AND at.academic_year = %s AND at.date = %s'
+            value = (course_id, semester, academic_year, date)
             cursor.execute(stmt,value)
             students = cursor.fetchall()
             if len(students) > 0:
@@ -208,7 +217,7 @@ class User(BaseModel):
                         'student_last_name': user[2],
                         'student_nickname': user[3],
                         'gpax': user[4],
-                        'embedded_face': np.loads(user[5]).tolist(),
+                        # 'embedded_face': np.loads(user[5]).tolist(),
                     }
                     for user in students
                 ]
