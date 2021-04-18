@@ -83,7 +83,6 @@ class UserController(Controller):
             year = payload['acedamic_year']
             date = payload['date']
             for student in payload['students']:
-                print(student['student_id'])
                 response = await User(request.app).add_student_attendants(payload['course_id'],student['student_id'],term,year,date)
                 list_response.append(response)
                 if response['status'] ==  'err' and response['reason'] == 'can not found course id':

@@ -152,15 +152,24 @@ class User(BaseModel):
                     value = (student_id,)
                     cursor.execute(stmt, value)
                     if cursor.fetchone()[0]:
-                        stmt = 'INSERT INTO attendants (course_id, student_id, semester, acedamic_year, date)\
-                            VALUES (%s,%s,%s,%s,%s)'
+                        stmt = 'SELECT count(*) FROM attendants WHERE course_id = %s AND student_id = %s AND semester = %s AND acedamic_year = %s AND date = %s'
                         value = (course_id, student_id, semester, acedamic_year, date)
                         cursor.execute(stmt, value)
-                        self.app.mysql_conn.commit()
-                        cursor.close()
-                        reason = 'check student id: '+str(student_id)+' in course '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year)+' day: '+str(date)
-                        return {'status': 'success.',
-                                'reason': reason }
+                        if cursor.fetchone()[0]:
+                            stmt = 'INSERT INTO attendants (course_id, student_id, semester, acedamic_year, date)\
+                                VALUES (%s,%s,%s,%s,%s)'
+                            value = (course_id, student_id, semester, acedamic_year, date)
+                            cursor.execute(stmt, value)
+                            self.app.mysql_conn.commit()
+                            cursor.close()
+                            reason = 'check student id: '+str(student_id)+' in course '+str(course_id)+' semester: '+str(semester)+' acedamic year: '+str(acedamic_year)+' day: '+str(date)
+                            return {'status': 'success.',
+                                    'reason': reason }
+                        else:
+                            cursor.close()
+                            reason = 'student id: ' + str(student_id) + ' is check in already '
+                            return {'status': 'err',
+                                    'reason': reason }
                     else:
                         cursor.close()
                         reason = 'can not found student id: ' + str(student_id)
