@@ -83,6 +83,7 @@ class User(BaseModel):
             else: 
                 course = 'not found this course'
                 users = []
+                return {'status': 'fail', 'course': course, 'student': users}
             cursor.close()
             return {'status': 'success', 'course': course, 'student': users}
         except:
@@ -358,3 +359,50 @@ class User(BaseModel):
                 pass
             return {'status': 'err'}
          
+    async def delete_student_in_system(self, student_id, **kwargs):
+        try:
+            cursor = self.app.mysql_conn.cursor(buffered=True)
+            stmt = 'DELETE FROM student WHERE student_id = %s'
+            value = (student_id,)
+            cursor.execute(stmt,value)
+            self.app.mysql_conn.commit()
+            cursor.close()
+            return {'status': 'success.'}
+        except:
+            try:
+                cursor.close()
+            except:
+                pass
+            return {'status': 'err'}
+    
+    async def delete_student_in_course(self, enroll_id, **kwargs):
+        try:
+            cursor = self.app.mysql_conn.cursor(buffered=True)
+            stmt = 'DELETE FROM enrollment WHERE enroll_id = %s'
+            value = (enroll_id,)
+            cursor.execute(stmt,value)
+            self.app.mysql_conn.commit()
+            cursor.close()
+            return {'status': 'success.'}
+        except:
+            try:
+                cursor.close()
+            except:
+                pass
+            return {'status': 'err'}
+         
+    async def delete_course(self, ocourse_id, **kwargs):
+        try:
+            cursor = self.app.mysql_conn.cursor(buffered=True)
+            stmt = 'DELETE FROM course WHERE ocourse_id = %s'
+            value = (ocourse_id,)
+            cursor.execute(stmt,value)
+            self.app.mysql_conn.commit()
+            cursor.close()
+            return {'status': 'success.'}
+        except:
+            try:
+                cursor.close()
+            except:
+                pass
+            return {'status': 'err'}

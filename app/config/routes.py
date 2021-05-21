@@ -66,8 +66,21 @@ def map_routes(app):
     resource = app.router.add_resource('/addAttendants', name='add_student_attendants')
     resource.add_route('POST', user_controller.add_student_attendants)
     
-    # resource = app.router.add_resource('/fetchAttendants', name='student_attendants')
-    # resource.add_route('POST', user_controller.get_attendants)
+    # 12
+    resource = app.router.add_resource('/deleteStudentInSystem', name='delete_student_in_system')
+    resource.add_route('POST', user_controller.delete_student_in_system)
+
+    # 13
+    resource = app.router.add_resource('/deleteStudentInCourse', name='delete_student_in_course')
+    resource.add_route('POST', user_controller.delete_student_in_course)
+
+    # 14
+    resource = app.router.add_resource('/deleteCourse', name='delete_course')
+    resource.add_route('POST', user_controller.delete_course)
+
+
+
+
 
     for route in app.router.routes():
         cors.add(route)

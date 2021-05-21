@@ -213,3 +213,47 @@ class UserController(Controller):
                         'reason': 'Controller rejected. Please check input.'}
             await self.write(request, self.json_response(response))
             
+    async def delete_student_in_system(self, request):
+        try:
+            payload = await request.json()
+            try:
+                if payload is not None:
+                    print('can get payload')
+            except (NameError, AttributeError):
+                print('not found payload')
+            response = await User(request.app).delete_student_in_system(**payload)
+            await self.write(request, self.json_response(response))
+        except:
+            response = {'status': 'Bad Request.',
+                        'reason': 'Controller rejected. Please check input.'}
+            await self.write(request, self.json_response(response))
+
+    async def delete_student_in_course(self, request):
+        try:
+            payload = await request.json()
+            try:
+                if payload is not None:
+                    print('can get payload')
+            except (NameError, AttributeError):
+                print('not found payload')
+            response = await User(request.app).delete_student_in_course(**payload)
+            await self.write(request, self.json_response(response))
+        except:
+            response = {'status': 'Bad Request.',
+                        'reason': 'Controller rejected. Please check input.'}
+            await self.write(request, self.json_response(response))
+
+    async def delete_course(self, request):
+        try:
+            payload = await request.json()
+            try:
+                if payload is not None:
+                    print('can get payload')
+            except (NameError, AttributeError):
+                print('not found payload')
+            response = await User(request.app).delete_course(**payload)
+            await self.write(request, self.json_response(response))
+        except:
+            response = {'status': 'Bad Request.',
+                        'reason': 'Controller rejected. Please check input.'}
+            await self.write(request, self.json_response(response))
